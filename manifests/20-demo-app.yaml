@@ -1,0 +1,48 @@
+# The swappable application. Contract (see README "Swapping the app"):
+#   - label  app=demo-app                      (controller selector)
+#   - label  autoscale.lab/monitor="true"      (Prometheus PodMonitor selector)
+#   - container port named "http" serving /metrics (or named "metrics")
+# Replace the image / manifest any time; nothing else needs to change.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-app
+  namespace: autoscale-lab
+  labels: {app: demo-app}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: demo-app}}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate: {maxUnavailable: 0, maxSurge: 25%}
+  template:
+    metadata:
+      labels: {app: demo-app, autoscale.lab/monitor: "true"}
+    spec:
+      containers:
+        - name: app
+          image: demo-app:dev
+          imagePullPolicy: IfNotPresent
+          ports: [{containerPort: 8000, name: http}]
+          env:
+            - {name: CPU_MS, value: "10"}
+            - {name: STARTUP_DELAY_S, value: "5"}   # artificial pod-ready lag
+            - {name: REDIS_HOST, value: redis}
+          readinessProbe:
+            httpGet: {path: /readyz, port: http}
+            periodSeconds: 1
+          livenessProbe:
+            httpGet: {path: /healthz, port: http}
+            periodSeconds: 10
+          resources:
+            requests: {cpu: 250m, memory: 64Mi}
+            limits: {cpu: 500m, memory: 256Mi}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: demo-app
+  namespace: autoscale-lab
+spec:
+  selector: {app: demo-app}
+  ports: [{port: 8000, targetPort: http, name: http}]

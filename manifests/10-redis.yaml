@@ -1,0 +1,32 @@
+# Redis (job queue) + redis_exporter sidecar (queue depth, clients, memory, commands/s).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: autoscale-lab
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: redis}}
+  template:
+    metadata:
+      labels: {app: redis, autoscale.lab/monitor: "true"}
+    spec:
+      containers:
+        - name: redis
+          image: redis:7-alpine
+          ports: [{containerPort: 6379, name: redis}]
+          resources: {requests: {cpu: 50m, memory: 64Mi}, limits: {cpu: 500m, memory: 256Mi}}
+        - name: exporter
+          image: oliver006/redis_exporter:v1.62.0
+          args: ["--redis.addr=localhost:6379", "--check-keys=jobs"]
+          ports: [{containerPort: 9121, name: metrics}]
+          resources: {requests: {cpu: 10m, memory: 32Mi}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: autoscale-lab
+spec:
+  selector: {app: redis}
+  ports: [{port: 6379, targetPort: redis, name: redis}]

@@ -1,0 +1,24 @@
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+credentials.json
+
+# Local Kubernetes configuration
+.kube/
+kubeconfig
+
+# Generated experiment output
+results/
+*.log
+.DS_Store

@@ -1,0 +1,13 @@
+# Requires KEDA (helm install keda kedacore/keda -n keda --create-namespace).
+# Autoscales the queue worker from Redis list length; pollingInterval is KEDA's static 30s default.
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata: {name: worker, namespace: autoscale-lab}
+spec:
+  scaleTargetRef: {name: worker}
+  pollingInterval: 30
+  minReplicaCount: 1
+  maxReplicaCount: 10
+  triggers:
+    - type: redis
+      metadata: {address: "redis.autoscale-lab.svc:6379", listName: jobs, listLength: "20"}

@@ -1,0 +1,23 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: k6-run
+  namespace: autoscale-lab
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 3600
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: k6
+          image: grafana/k6:0.54.0
+          args: ["run", "/scripts/scenarios.js"]
+          env:
+            - {name: SCENARIO, value: "__SCENARIO__"}
+            - {name: BASE_RPS, value: "__BASE__"}
+            - {name: PEAK_RPS, value: "__PEAK__"}
+          volumeMounts: [{name: scripts, mountPath: /scripts}]
+          resources: {requests: {cpu: 200m, memory: 128Mi}}
+      volumes:
+        - {name: scripts, configMap: {name: k6-scripts}}

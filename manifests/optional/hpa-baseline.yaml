@@ -1,0 +1,14 @@
+# Stock Kubernetes HPA as an external reference. When using it, disable the DFC scaler first:
+#   curl -XPOST localhost:18080/config -d '{"scaling":{"enabled":false}}'
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata: {name: demo-app-hpa, namespace: autoscale-lab}
+spec:
+  scaleTargetRef: {apiVersion: apps/v1, kind: Deployment, name: demo-app}
+  minReplicas: 1
+  maxReplicas: 20
+  metrics:
+    - type: Resource
+      resource: {name: cpu, target: {type: Utilization, averageUtilization: 60}}
+  behavior:
+    scaleDown: {stabilizationWindowSeconds: 60}

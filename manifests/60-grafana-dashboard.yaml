@@ -1,0 +1,663 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dfc-dashboard
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+data:
+  dfc-lab.json: |
+    {
+     "title": "Adaptive polling lab",
+     "uid": "dfc-lab",
+     "schemaVersion": 39,
+     "version": 1,
+     "refresh": "5s",
+     "time": {
+      "from": "now-15m",
+      "to": "now"
+     },
+     "tags": [
+      "dfc"
+     ],
+     "panels": [
+      {
+       "id": 1,
+       "type": "timeseries",
+       "title": "Request rate (rps)",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+       },
+       "fieldConfig": {
+        "defaults": {
+         "unit": "reqps"
+        },
+        "overrides": []
+       },
+       "targets": [
+        {
+         "refId": "A",
+         "expr": "sum(rate(http_requests_total{namespace=\"autoscale-lab\",pod=~\"demo-app.*\"}[15s]))",
+         "legendFormat": "Prometheus rate(15s)",
+         "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+         }
+        },
+        {
+         "refId": "B",
+         "expr": "dfc_observed_rate",
+         "legendFormat": "DFC observed",
+         "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+         }
+        },
+        {
+         "refId": "C",
+         "expr": "dfc_forecast_rate",
+         "legendFormat": "DFC forecast (horizon)",
+         "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+         }
+        }
+       ]
+      },
+      {
+       "id": 2,
+       "type": "timeseries",
+       "title": "Response time (s)",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+       },
+       "fieldConfig": {
+        "defaults": {
+         "unit": "s"
+        },
+        "overrides": []
+       },
+       "targets": [
+        {
+         "refId": "A",
+         "expr": "histogram_quantile(0.5, sum by (le) (rate(http_request_duration_seconds_bucket{namespace=\"autoscale-lab\",pod=~\"demo-app.*\"}[15s])))",
+         "legendFormat": "p50",
+         "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+         }
+        },
+        {
+         "refId": "B",
+         "expr": "histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{namespace=\"autoscale-lab\",pod=~\"demo-app.*\"}[15s])))",
+         "legendFormat": "p95",
+         "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+         }
+        },
+        {
+         "refId": "C",
+         "expr": "histogram_quantile(0.99, sum by (le) (rate(http_request_duration_seconds_bucket{namespace=\"autoscale-lab\",pod=~\"demo-app.*\"}[15s])))",
+         "legendFormat": "p99",
+         "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+         }
+        }
+       ]
+      },
+      {
+       "id": 3,
+       "type": "timeseries",
+       "title": "Error ratio",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+       },
+       "fieldConfig": {
+        "defaults": {
+         "unit": "percentunit"
+        },
+        "overrides": []
+       },
+       "targets": [
+        {
+         "refId": "A",
+         "expr": "sum(rate(http_requests_total{namespace=\"autoscale-lab\",pod=~\"demo-app.*\",status=~\"5..\"}[15s])) / clamp_min(sum(rate(http_requests_total{namespace=\"autoscale-lab\",pod=~\"demo-app.*\"}[15s])),1)",
+         "legendFormat": "5xx ratio",
+         "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+         }
+        }
+       ]
+      },
+      {
+       "id": 4,
+       "type": "timeseries",
+       "title": "Replicas",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+       },
+       "fieldConfig": {
+        "defaults": {
+         "unit": "short"
+        },
+        "overrides": []
+       },
+       "targets": [
+        {
+         "refId": "A",
+         "expr": "kube_deployment_spec_replicas{deployment=\"demo-app\"}",
+         "legendFormat": "spec",
+         "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+         }
+        },
+        {
+         "refId": "B",
+         "expr": "kube_deployment_status_replicas_ready{deployment=\"demo-app\"}",
+         "legendFormat": "ready",
+         "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+         }
+        },
+        {
+         "refId": "C",
+         "expr": "dfc_desired_replicas",
+         "legendFormat": "DFC desired",
+         "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+         }
+        }
+       ]
+      },
+      {
+       "id": 5,
+       "type": "timeseries",
+       "title": "CPU per pod (cAdvisor, cores)",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 16
+       },
+       "fieldConfig": {
+        "defaults": {
+         "unit": "short"
+        },
+        "overrides": []
+       },
+       "targets": [
+        {
+         "refId": "A",
+         "expr": "sum by (pod) (rate(container_cpu_usage_seconds_total{namespace=\"autoscale-lab\",pod=~\"demo-app.*\",container=\"app\"}[15s]))",
+         "legendFormat": "{{pod}}",
+         "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+         }
+        }
+       ]
+      },
+      {
+       "id": 6,
+       "type": "timeseries",
+       "title": "CPU throttling ratio",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 16
+       },
+       "fieldConfig": {
+        "defaults": {
+         "unit": "percentunit"
+        },
+        "overrides": []
+       },
+       "targets": [
+        {
+         "refId": "A",
+         "expr": "sum by (pod) (rate(container_cpu_cfs_throttled_periods_total{namespace=\"autoscale-lab\",pod=~\"demo-app.*\",container=\"app\"}[15s])) / sum by (pod) (rate(container_cpu_cfs_periods_total{namespace=\"autoscale-lab\",pod=~\"demo-app.*\",container=\"app\"}[15s]))",
+         "legendFormat": "{{pod}}",
+         "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+         }
+        }
+       ]
+      },
+      {
+       "id": 7,
+       "type": "timeseries",
+       "title": "Memory working set per pod",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 24
+       },
+       "fieldConfig": {
+        "defaults": {
+         "unit": "bytes"
+        },
+        "overrides": []
+       },
+       "targets": [
+        {
+         "refId": "A",
+         "expr": "container_memory_working_set_bytes{namespace=\"autoscale-lab\",pod=~\"demo-app.*\",container=\"app\"}",
+         "legendFormat": "{{pod}}",
+         "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+         }
+        }
+       ]
+      },
+      {
+       "id": 8,
+       "type": "timeseries",
+       "title": "In-flight requests",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 24
+       },
+       "fieldConfig": {
+        "defaults": {
+         "unit": "short"
+        },
+        "overrides": []
+       },
+       "targets": [
+        {
+         "refId": "A",
+         "expr": "sum(http_requests_in_flight{namespace=\"autoscale-lab\",pod=~\"demo-app.*\"})",
+         "legendFormat": "in flight",
+         "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+         }
+        }
+       ]
+      },
+      {
+       "id": 9,
+       "type": "timeseries",
+       "title": "DFC polling interval & change score",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 32
+       },
+       "fieldConfig": {
+        "defaults": {
+         "unit": "s"
+        },
+        "overrides": []
+       },
+       "targets": [
+        {
+         "refId": "A",
+         "expr": "dfc_poll_interval_seconds",
+         "legendFormat": "interval (s)",
+         "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+         }
+        },
+        {
+         "refId": "B",
+         "expr": "dfc_change_score",
+         "legendFormat": "change score",
+         "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+         }
+        }
+       ]
+      },
+      {
+       "id": 10,
+       "type": "timeseries",
+       "title": "Velocity dQ/dt and acceleration d2Q/dt2",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 32
+       },
+       "fieldConfig": {
+        "defaults": {
+         "unit": "short"
+        },
+        "overrides": []
+       },
+       "targets": [
+        {
+         "refId": "A",
+         "expr": "dfc_velocity",
+         "legendFormat": "rps/s",
+         "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+         }
+        },
+        {
+         "refId": "B",
+         "expr": "dfc_acceleration",
+         "legendFormat": "rps/s^2",
+         "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+         }
+        }
+       ]
+      },
+      {
+       "id": 11,
+       "type": "timeseries",
+       "title": "Monitoring overhead: scrapes/s & bytes/s",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 40
+       },
+       "fieldConfig": {
+        "defaults": {
+         "unit": "short"
+        },
+        "overrides": []
+       },
+       "targets": [
+        {
+         "refId": "A",
+         "expr": "rate(dfc_scrapes_total[1m])",
+         "legendFormat": "pod scrapes/s",
+         "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+         }
+        },
+        {
+         "refId": "B",
+         "expr": "rate(dfc_sentinel_probes_total[1m])",
+         "legendFormat": "sentinel probes/s",
+         "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+         }
+        },
+        {
+         "refId": "C",
+         "expr": "rate(dfc_scrape_bytes_total[1m])",
+         "legendFormat": "bytes/s",
+         "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+         }
+        }
+       ]
+      },
+      {
+       "id": 12,
+       "type": "timeseries",
+       "title": "Controller own CPU (cores)",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 40
+       },
+       "fieldConfig": {
+        "defaults": {
+         "unit": "short"
+        },
+        "overrides": []
+       },
+       "targets": [
+        {
+         "refId": "A",
+         "expr": "rate(process_cpu_seconds_total{namespace=\"autoscale-lab\",pod=~\"dfc-controller.*\"}[1m])",
+         "legendFormat": "controller CPU",
+         "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+         }
+        }
+       ]
+      },
+      {
+       "id": 13,
+       "type": "timeseries",
+       "title": "Queue depth & throughput (Redis)",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 48
+       },
+       "fieldConfig": {
+        "defaults": {
+         "unit": "short"
+        },
+        "overrides": []
+       },
+       "targets": [
+        {
+         "refId": "A",
+         "expr": "redis_key_size{key=\"jobs\"}",
+         "legendFormat": "redis jobs length",
+         "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+         }
+        },
+        {
+         "refId": "B",
+         "expr": "dfc_queue_depth",
+         "legendFormat": "DFC queue depth",
+         "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+         }
+        },
+        {
+         "refId": "C",
+         "expr": "sum(rate(worker_jobs_processed_total{namespace=\"autoscale-lab\"}[15s]))",
+         "legendFormat": "jobs/s processed",
+         "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+         }
+        }
+       ]
+      },
+      {
+       "id": 14,
+       "type": "timeseries",
+       "title": "Redis internals",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 48
+       },
+       "fieldConfig": {
+        "defaults": {
+         "unit": "short"
+        },
+        "overrides": []
+       },
+       "targets": [
+        {
+         "refId": "A",
+         "expr": "redis_connected_clients{namespace=\"autoscale-lab\"}",
+         "legendFormat": "clients",
+         "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+         }
+        },
+        {
+         "refId": "B",
+         "expr": "rate(redis_commands_processed_total{namespace=\"autoscale-lab\"}[15s])",
+         "legendFormat": "commands/s",
+         "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+         }
+        },
+        {
+         "refId": "C",
+         "expr": "redis_memory_used_bytes{namespace=\"autoscale-lab\"}",
+         "legendFormat": "memory bytes",
+         "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+         }
+        }
+       ]
+      },
+      {
+       "id": 15,
+       "type": "timeseries",
+       "title": "Ready pods (kube-state-metrics)",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 56
+       },
+       "fieldConfig": {
+        "defaults": {
+         "unit": "short"
+        },
+        "overrides": []
+       },
+       "targets": [
+        {
+         "refId": "A",
+         "expr": "sum(kube_pod_status_ready{namespace=\"autoscale-lab\",pod=~\"demo-app.*\",condition=\"true\"})",
+         "legendFormat": "ready pods",
+         "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+         }
+        }
+       ]
+      },
+      {
+       "id": 16,
+       "type": "timeseries",
+       "title": "Last detection latency (s)",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+       },
+       "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 56
+       },
+       "fieldConfig": {
+        "defaults": {
+         "unit": "s"
+        },
+        "overrides": []
+       },
+       "targets": [
+        {
+         "refId": "A",
+         "expr": "dfc_last_detection_latency_seconds",
+         "legendFormat": "burst -> detect",
+         "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+         }
+        }
+       ]
+      }
+     ]
+    }
